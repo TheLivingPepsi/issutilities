@@ -1,7 +1,9 @@
 # issutilities
+
 Utilities package for issu's discord bots.
 
 ## Installation
-Use `pip install issutilities` or update your package with `pip install issutilities -U`
+
+Run `py -3 -m pip install -U issutilities` (Windows) or `python3 -m pip install -U issutilities` (MacOS/Linux)
 
 Das it
