@@ -1,4 +1,4 @@
-import discord, io, aiohttp, datetime
+import discord, io, aiohttp
 
 
 class DISCORD:

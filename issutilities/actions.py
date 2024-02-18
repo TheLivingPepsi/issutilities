@@ -1,4 +1,4 @@
-import os, time, asyncio, aiohttp, io
+import os, time, asyncio
 import colors
 
 ANSI = colors.ANSI()
