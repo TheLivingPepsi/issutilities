@@ -1,6 +1,6 @@
 import colors, directories, actions, craft
 
-COLORS = colors
+COLORS = colors.ANSI
 DIRS = directories
-ACTIONS = actions
+ACTIONS = actions.CONSOLE
 CRAFT = craft.DISCORD
