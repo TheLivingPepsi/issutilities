@@ -63,7 +63,7 @@ class DISCORD:
             )
 
     @classmethod
-    def craft_prefixes(self, prefixes: list | None = ["@"]) -> list:
+    def prefix(self, prefixes: list | None = ["@"]) -> list:
         prefix_mention, other_prefixes = False, False
 
         for index, prefix in enumerate(prefixes):
