@@ -1,4 +1,5 @@
 import discord, io, aiohttp
+from discord.ext import commands
 
 
 class DISCORD:
@@ -60,6 +61,25 @@ class DISCORD:
             return discord.AllowedMentions(
                 everyone=everyone, users=users, roles=roles, replied_user=replied_user
             )
+
+    @classmethod
+    def craft_prefixes(self, prefixes: list | None = ["@"]) -> list:
+        prefix_mention, other_prefixes = False, False
+
+        for index, prefix in enumerate(prefixes):
+            if prefix == "@":
+                prefix_mention = True
+                prefixes.pop(index)
+            elif prefix_mention and other_prefixes:
+                break
+            else:
+                other_prefixes = True
+
+        if prefix_mention and other_prefixes:
+            return commands.when_mentioned_or(*prefixes)
+        elif prefix_mention or not other_prefixes:
+            return commands.when_mentioned
+        return prefixes
 
     @classmethod
     async def __bytes_from_url(
