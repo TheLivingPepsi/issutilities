@@ -1,7 +1,9 @@
-import os, time, asyncio
+import os, time, asyncio, typing
 from . import colors
 
 ANSI = colors.ANSI
+
+Any = typing.Any
 
 
 class CONSOLE:
@@ -18,7 +20,7 @@ class CONSOLE:
 
     @classmethod
     async def sleep_async(
-        self, delay: int | float | None = 0, result: any | None = None
+        self, delay: int | float | None = 0, result: Any | None = None
     ) -> None:
         """
         Block for delay seconds.
