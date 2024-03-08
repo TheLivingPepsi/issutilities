@@ -1,7 +1,7 @@
 import os, time, asyncio
-import colors
+from . import colors
 
-ANSI = colors.ANSI()
+ANSI = colors.ANSI
 
 
 class CONSOLE:
