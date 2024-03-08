@@ -49,18 +49,28 @@ class DISCORD:
 
     @classmethod
     def allowed_mentions(
-        self, properties: dict | None = None
+        self, properties: dict | str | None = "All"
     ) -> discord.AllowedMentions | None:
         """Creates and returns an AllowedMentions object."""
+        AllowedMentions = discord.AllowedMentions
+        reference = {
+            "All": AllowedMentions.all(),
+            "None": AllowedMentions.none(),
+        }
 
-        everyone, users, roles, replied_user = self.__unpacked_props(
-            properties, ("everyone", "users", "roles", "replied_user")
-        )
+        if type(properties) == dict:
+            everyone, users, roles, replied_user = self.__unpacked_props(
+                properties, ("everyone", "users", "roles", "replied_user")
+            )
 
-        if properties:
             return discord.AllowedMentions(
                 everyone=everyone, users=users, roles=roles, replied_user=replied_user
             )
+
+        if properties in reference:
+            return reference[properties]
+
+        return reference["None"]
 
     @classmethod
     def prefix(self, prefixes: list | None = ["@"]) -> list:
@@ -80,6 +90,21 @@ class DISCORD:
         elif prefix_mention or not other_prefixes:
             return commands.when_mentioned
         return prefixes
+
+    @classmethod
+    def intents(self, intent: dict | str | None = "All"):
+        Intents = discord.Intents
+        reference = {
+            "All": Intents.all(),
+            "Default": Intents.default(),
+            "None": Intents.none(),
+        }
+
+        if type(intent) == str and intent in reference:
+            return reference[intent]
+        elif type(intent) == dict:
+            return Intents(**intent)
+        return reference["All"]
 
     @classmethod
     async def __bytes_from_url(
