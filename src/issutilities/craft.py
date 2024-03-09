@@ -4,7 +4,7 @@ from discord.ext import commands
 
 class DISCORD:
     @classmethod
-    def __unpacked_props(props: dict | None = None, mapped_values: tuple | None = None):
+    def __unpacked_props(self, props: dict | None = None, mapped_values: tuple | None = None):
         """Unpacks a properties dict into variables."""
         if props and mapped_values:
             return map(props.get, mapped_values)
