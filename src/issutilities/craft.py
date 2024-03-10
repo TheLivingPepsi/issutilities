@@ -108,14 +108,20 @@ async def __bytes_from_url(
     aiohttp_client: aiohttp.ClientSession | None = None,
 ) -> io.BytesIO | None:
     """Creates and returns a binary stream of data."""
-    if url:
-        if not aiohttp_client:
-            aiohttp_client = aiohttp.ClientSession()
-
-        async with aiohttp_client.get(url) as resp:
+    if not url:
+        return
+    
+    async def get_resp(client):
+        async with client.get(url) as resp:
             if resp.status != 200:
                 return
             return io.BytesIO(await resp.read())
+    
+    if aiohttp_client:
+        return await get_resp(aiohttp_client)
+
+    async with aiohttp.ClientSession() as client:
+        return await get_resp(client)
 
 
 async def discord_file(
