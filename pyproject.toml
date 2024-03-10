@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "issutilities"
-version = "0.1.8"
+version = "0.1.9"
 description = "A small utilities file made for issu's Discord bots."
 readme = "README.md"
 requires-python = ">=3.12"
