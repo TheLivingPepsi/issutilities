@@ -199,6 +199,8 @@ class an:
 
         return new_embed
 
+class a(an):
+    pass
 
 class with_HTTP(HTTP):
     async def __bytes_from_url(
