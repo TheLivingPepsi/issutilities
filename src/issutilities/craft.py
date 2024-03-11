@@ -3,9 +3,7 @@ from discord.ext import commands
 from .client import HTTP
 
 
-def __unpacked_props(
-    props: dict | None = None, mapped_values: tuple | None = None
-):
+def unpacked_props(props: dict | None = None, mapped_values: tuple | None = None):
     """Unpacks a properties dict into variables."""
     if props and mapped_values:
         return map(props.get, mapped_values)
@@ -17,7 +15,7 @@ class an:
     ) -> discord.Activity | None:
         """Creates and returns a Discord Activity object."""
 
-        activity_type, activity_name, activity_url = __unpacked_props(
+        activity_type, activity_name, activity_url = unpacked_props(
             properties, ("type", "name", "url")
         )
 
@@ -61,7 +59,7 @@ class an:
         }
 
         if type(properties) == dict:
-            everyone, users, roles, replied_user = __unpacked_props(
+            everyone, users, roles, replied_user = unpacked_props(
                 properties, ("everyone", "users", "roles", "replied_user")
             )
 
@@ -135,7 +133,7 @@ class an:
             thumbnail,
             author,
             fields,
-        ) = __unpacked_props(
+        ) = unpacked_props(
             properties,
             (
                 "title",
@@ -160,7 +158,7 @@ class an:
         )
 
         if author:
-            author_name, author_url, author_icon = __unpacked_props(
+            author_name, author_url, author_icon = unpacked_props(
                 author, ("name", "url", "icon_url")
             )
 
@@ -169,7 +167,7 @@ class an:
             )
 
         if footer:
-            footer_text, footer_icon = __unpacked_props(footer, ("text", "icon_url"))
+            footer_text, footer_icon = unpacked_props(footer, ("text", "icon_url"))
             new_embed = new_embed.set_footer(text=footer_text, icon_url=footer_icon)
 
         if image:
@@ -180,7 +178,7 @@ class an:
 
         if fields:
             for field in fields:
-                field_index, field_name, field_value, field_inline = __unpacked_props(
+                field_index, field_name, field_value, field_inline = unpacked_props(
                     field, ("index", "name", "value", "inline")
                 )
 
@@ -199,8 +197,10 @@ class an:
 
         return new_embed
 
+
 class a(an):
     pass
+
 
 class with_HTTP(HTTP):
     async def __bytes_from_url(
@@ -223,7 +223,7 @@ class with_HTTP(HTTP):
     ) -> discord.File | None:
         """Creates and returns a Discord File object."""
 
-        filename, description, is_spoiler, is_url = __unpacked_props(
+        filename, description, is_spoiler, is_url = unpacked_props(
             properties, ("filename", "description", "is_spoiler", "is_url")
         )
 
