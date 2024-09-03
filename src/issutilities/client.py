@@ -1,5 +1,6 @@
 import aiohttp
 
+
 class HTTP:
     def __init__(self):
         self.session = aiohttp.ClientSession()

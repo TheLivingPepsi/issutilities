@@ -8,14 +8,12 @@ def clear() -> None:
     print(colors.RESET, end="")
 
 
-def sleep(x: int | float | None = 0) -> None:
+def sleep(x: int | float = 0) -> None:
     """Suspend execution of the calling thread for the given number of seconds."""
     time.sleep(x)
 
 
-async def sleep_async(
-    delay: int | float | None = 0, result: typing.Any | None = None
-) -> None:
+async def sleep_async(delay: int | float = 0, result: typing.Any = None) -> None:
     """
     Block for delay seconds.
 

@@ -1,18 +1,24 @@
-import discord, io, aiohttp
+import discord, io
 from discord.ext import commands
 from .client import HTTP
+from typing import Any, Iterable, Callable, cast
 
 
-def unpacked_props(props: dict | None = None, mapped_values: tuple | None = None):
+def unpacked_props(
+    props: dict[str, Any] = {}, mapped_values: Iterable[str] = []
+) -> list[Any]:
     """Unpacks a properties dict into variables."""
-    if props and mapped_values:
-        return map(props.get, mapped_values)
+    return [props.get(v) for v in mapped_values]
 
 
 class an:
+    def __init__(self) -> None:
+        pass
+
+    @classmethod
     def activity(
-        self, properties: dict | None = {"type": None}
-    ) -> discord.Activity | None:
+        cls, properties: dict[str, Any] = {"type": None}
+    ) -> discord.Game | discord.Streaming | discord.Activity | None:
         """Creates and returns a Discord Activity object."""
 
         activity_type, activity_name, activity_url = unpacked_props(
@@ -47,12 +53,13 @@ class an:
 
         return created_activity
 
+    @classmethod
     def allowed_mentions(
-        self,
-        properties: dict | str | None = "All",
-    ) -> discord.AllowedMentions | None:
+        cls, properties: dict[str, bool] | str = "All"
+    ) -> discord.AllowedMentions:
         """Creates and returns an AllowedMentions object."""
         AllowedMentions = discord.AllowedMentions
+
         reference = {
             "All": AllowedMentions.all(),
             "None": AllowedMentions.none(),
@@ -72,8 +79,14 @@ class an:
 
         return reference["None"]
 
-    def prefix(prefixes: list | None = ["@"]) -> list:
+    @staticmethod
+    def prefix(
+        prefixes: list[str] = ["@"],
+    ) -> list[str] | Callable[[None], list[str]]:
+        """Creates and returns a list of prefixes."""
         prefix_mention, other_prefixes = False, False
+
+        prefixes = cast(list[str], prefixes)
 
         for index, prefix in enumerate(prefixes):
             if prefix == "@":
@@ -85,12 +98,13 @@ class an:
                 other_prefixes = True
 
         if prefix_mention and other_prefixes:
-            return commands.when_mentioned_or(*prefixes)
+            return cast(list[str], commands.when_mentioned_or(*prefixes))
         elif prefix_mention or not other_prefixes:
-            return commands.when_mentioned
+            return cast(list[str], commands.when_mentioned)
         return prefixes
 
-    def intents(intent: dict | str | None = "All"):
+    @staticmethod
+    def intents(intent: dict[str, bool] | str = "All") -> discord.Intents:
         Intents = discord.Intents
         reference = {
             "All": Intents.all(),
@@ -100,10 +114,11 @@ class an:
 
         if type(intent) == str and intent in reference:
             return reference[intent]
-        elif type(intent) == dict:
+        elif type(intent) == dict[str, bool]:
             return Intents(**intent)
         return reference["All"]
 
+    @staticmethod
     def formatted_time(seconds: int | float | None = None) -> str:
         """Returns the given seconds in the HH:MM:SS format. If seconds is not greater than or equal to 1 hour, the hour is dropped from the format."""
 
@@ -120,7 +135,8 @@ class an:
 
         return formatted
 
-    def embed(self, properties: dict | None = None):
+    @classmethod
+    def embed(cls, properties: dict[str, Any] = {}):
         """Creates and returns a Discord Embed object."""
         (
             title,
@@ -203,6 +219,9 @@ class a(an):
 
 
 class with_HTTP(HTTP):
+    def __init__(self) -> None:
+        super().__init__()
+
     async def __bytes_from_url(
         self,
         url: str | None = None,
@@ -219,7 +238,7 @@ class with_HTTP(HTTP):
     async def discord_file(
         self,
         media: discord.Attachment | str | None = None,
-        properties: dict | None = None,
+        properties: dict[str, Any] = {},
     ) -> discord.File | None:
         """Creates and returns a Discord File object."""
 
@@ -228,10 +247,10 @@ class with_HTTP(HTTP):
         )
 
         if type(media) == discord.Attachment:
-            return media.to_file(
+            return await media.to_file(
                 filename=filename, description=description, spoiler=is_spoiler
             )
-        elif media:
+        elif type(media) == str:
             data = None
             if is_url:
                 data = await self.__bytes_from_url(media)
@@ -245,9 +264,9 @@ class with_HTTP(HTTP):
 
     async def files(
         self,
-        files: list | dict | None = None,
-        properties: dict | None = None,
-    ) -> list | None:
+        files: list[str] | dict[str, dict[str, Any]] | None = None,
+        properties: dict = {},
+    ) -> list[discord.File | None] | None:
         """Creates and returns a list of Discord File objects. If properties is given, it overrides any per-file properties given in files if files is a dict."""
         if type(files) == dict:
             return [
