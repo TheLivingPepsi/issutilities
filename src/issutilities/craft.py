@@ -1,132 +1,130 @@
 import discord, io
+from datetime import datetime
 from discord.ext import commands
-from .client import HTTP
-from typing import Any, Iterable, Callable, cast
+from typing import Any, Callable, Iterable, cast, Type, TypeVar
 
 
-def unpacked_props(
-    props: dict[str, Any] = {}, mapped_values: Iterable[str] = []
-) -> list[Any]:
-    """Unpacks a properties dict into variables."""
-    return [props.get(v) for v in mapped_values]
+class Helper:
+    PREFIX_MENTION_SYMBOL = "@"
+
+    @classmethod
+    def prefix_is_mention(cls, prefix: str) -> bool:
+        return prefix == cls.PREFIX_MENTION_SYMBOL
+
+    @classmethod
+    def prefixes_has_mention(cls, prefixes: Iterable[str]) -> bool:
+        return cls.PREFIX_MENTION_SYMBOL in prefixes
 
 
 class an:
-    def __init__(self) -> None:
-        pass
-
-    @classmethod
+    @staticmethod
     def activity(
-        cls, properties: dict[str, Any] = {"type": None}
-    ) -> discord.Game | discord.Streaming | discord.Activity | None:
-        """Creates and returns a Discord Activity object."""
-
-        activity_type, activity_name, activity_url = unpacked_props(
-            properties, ("type", "name", "url")
-        )
-
-        created_activity = None
+        activity_type: discord.ActivityType, name: str, **kwargs
+    ) -> discord.BaseActivity:
+        """Creates and returns a Discord Activity object (any subclass of BaseActivity)."""
 
         match (activity_type):
-            case "Playing":
-                created_activity = discord.Game(
-                    name=(activity_name or "Something"),
-                )
-
-            case "Streaming":
+            case discord.ActivityType.playing:
+                created_activity = discord.Game(name=name)
+            case discord.ActivityType.streaming:
                 created_activity = discord.Streaming(
-                    name=(activity_name or "Something"),
-                    url=(activity_url or "https://www.twitch.tv/thelivingpepsi"),
+                    name=name,
+                    url=kwargs.get("url", "https://www.youtube.com/TheLivingPepsi"),
                 )
-
-            case "Listening" | "Watching" | "Competing":
+            case discord.ActivityType.custom:
+                created_activity = discord.CustomActivity(name=name)
+            case _:
                 created_activity = discord.Activity(
-                    type=(
-                        activity_type == "Competing"
-                        and discord.ActivityType.competing
-                        or activity_type == "Listening"
-                        and discord.ActivityType.listening
-                        or discord.ActivityType.watching
-                    ),
-                    name=(activity_name or "Something"),
+                    type=activity_type,
+                    name=name,
+                    state=kwargs.get("state"),
                 )
 
         return created_activity
 
-    @classmethod
+    @staticmethod
     def allowed_mentions(
-        cls, properties: dict[str, bool] | str = "All"
+        *permissions,
     ) -> discord.AllowedMentions:
         """Creates and returns an AllowedMentions object."""
-        AllowedMentions = discord.AllowedMentions
 
-        reference = {
-            "All": AllowedMentions.all(),
-            "None": AllowedMentions.none(),
-        }
+        if "all" in permissions:
+            return discord.AllowedMentions.all()
+        elif "none" in permissions or len(permissions) == 0:
+            return discord.AllowedMentions.none()
 
-        if type(properties) == dict:
-            everyone, users, roles, replied_user = unpacked_props(
-                properties, ("everyone", "users", "roles", "replied_user")
-            )
-
-            return discord.AllowedMentions(
-                everyone=everyone, users=users, roles=roles, replied_user=replied_user
-            )
-
-        if properties in reference:
-            return reference[properties]
-
-        return reference["None"]
+        return discord.AllowedMentions(
+            everyone="everyone" in permissions,
+            users="users" in permissions,
+            roles="roles" in permissions,
+            replied_user="replied_user" in permissions,
+        )
 
     @staticmethod
     def prefix(
-        prefixes: list[str] = ["@"],
-    ) -> list[str] | Callable[[None], list[str]]:
-        """Creates and returns a list of prefixes."""
-        prefix_mention, other_prefixes = False, False
+        *prefixes: str,
+    ) -> Iterable[str] | str | Callable[[commands.Bot, discord.Message], list[str]]:
+        """Creates and returns values that are prefixes for Discord bots."""
 
-        prefixes = cast(list[str], prefixes)
+        if type(prefixes) == str:
+            if Helper.prefix_is_mention(prefixes):
+                return commands.when_mentioned
+        else:
+            if len(prefixes) >= 2 and Helper.prefixes_has_mention(prefixes):
+                return commands.when_mentioned_or(*prefixes)
+            elif len(prefixes) == 1 and Helper.prefixes_has_mention(prefixes):
+                return commands.when_mentioned
 
-        for index, prefix in enumerate(prefixes):
-            if prefix == "@":
-                prefix_mention = True
-                prefixes.pop(index)
-            elif prefix_mention and other_prefixes:
-                break
-            else:
-                other_prefixes = True
-
-        if prefix_mention and other_prefixes:
-            return cast(list[str], commands.when_mentioned_or(*prefixes))
-        elif prefix_mention or not other_prefixes:
-            return cast(list[str], commands.when_mentioned)
         return prefixes
 
     @staticmethod
-    def intents(intent: dict[str, bool] | str = "All") -> discord.Intents:
-        Intents = discord.Intents
-        reference = {
-            "All": Intents.all(),
-            "Default": Intents.default(),
-            "None": Intents.none(),
-        }
+    def intents(*permissions: str) -> discord.Intents:
+        """Creates and returns an Intents object."""
 
-        if type(intent) == str and intent in reference:
-            return reference[intent]
-        elif type(intent) == dict[str, bool]:
-            return Intents(**intent)
-        return reference["All"]
+        if "all" in permissions:
+            return discord.Intents.all()
+        elif "default" in permissions:
+            return discord.Intents.default()
+        elif "none" in permissions:
+            return discord.Intents.none()
+
+        return discord.Intents(
+            guilds="guilds" in permissions,
+            members="members" in permissions,
+            moderation="moderation" in permissions or "bans" in permissions,
+            emojis_and_stickers="emojis_and_stickers" in permissions
+            or "emojis" in permissions,
+            integrations="integrations" in permissions,
+            webhooks="webhooks" in permissions,
+            invites="invites" in permissions,
+            voice_states="voice_states" in permissions,
+            presences="presences" in permissions,
+            guild_messages="guild_messages" in permissions or "messages" in permissions,
+            dm_messages="dm_messages" in permissions or "messages" in permissions,
+            guild_reactions="guild_reactions" in permissions
+            or "reactions" in permissions,
+            dm_reactions="dm_reactions" in permissions or "reactions" in permissions,
+            guild_typing="guild_typing" in permissions or "typing" in permissions,
+            dm_typing="dm_typing" in permissions or "typing" in permissions,
+            message_content="message_content" in permissions,
+            guild_scheduled_events="guild_scheduled_events" in permissions,
+            auto_moderation_configuration="auto_moderation_configuration" in permissions
+            or "auto_moderation" in permissions,
+            auto_moderation_execution="auto_moderation_execution" in permissions
+            or "auto_moderation" in permissions,
+            guild_polls="guild_polls" in permissions or "polls" in permissions,
+            dm_polls="dm_polls" in permissions or "polls" in permissions,
+        )
 
     @staticmethod
     def formatted_time(seconds: int | float | None = None) -> str:
         """Returns the given seconds in the HH:MM:SS format. If seconds is not greater than or equal to 1 hour, the hour is dropped from the format."""
 
-        if not seconds:
+        if seconds is None:
             return "0"
 
-        hours, seconds = divmod(seconds, 3600)
-        minutes, seconds = divmod(seconds, 60)
+        hours, remaining_seconds = divmod(seconds, 3600)
+        minutes, seconds = divmod(remaining_seconds, 60)
 
         hour = f"{hours:02d}:" if hours > 0 else ""
         timestamp = f"{minutes:02d}:{seconds:02d}"
@@ -136,92 +134,113 @@ class an:
         return formatted
 
     @classmethod
-    def embed(cls, properties: dict[str, Any] = {}):
+    def embed(
+        cls,
+        from_dict: dict[str, str] | None = None,
+        *,
+        title: str | None = None,
+        description: str | None = None,
+        url: str | None = None,
+        timestamp: datetime | None = None,
+        color: discord.Color | None = None,
+        footer: dict[str, str] | None = None,
+        image: str | None = None,
+        thumbnail: str | None = None,
+        author: dict[str, str] | None = None,
+        fields: list[dict[str, str | bool | int]] | None = None,
+    ):
         """Creates and returns a Discord Embed object."""
-        (
-            title,
-            description,
-            url,
-            timestamp,
-            color,
-            footer,
-            image,
-            thumbnail,
-            author,
-            fields,
-        ) = unpacked_props(
-            properties,
-            (
-                "title",
-                "description",
-                "url",
-                "timestamp",
-                "color",
-                "footer",
-                "image",
-                "thumbnail",
-                "author",
-                "fields",
-            ),
-        )
+
+        if from_dict is not None:
+            return discord.Embed.from_dict(from_dict)
+
+        if isinstance(title, str) and len(title) > 256:
+            title = title[:256]
+
+        if isinstance(description, str) and len(description) > 4096:
+            description = description[:4096]
 
         new_embed = discord.Embed(
-            color=color,
             title=title,
-            url=url,
             description=description,
+            url=url,
             timestamp=timestamp,
+            color=color,
         )
 
-        if author:
-            author_name, author_url, author_icon = unpacked_props(
-                author, ("name", "url", "icon_url")
-            )
-
-            new_embed = new_embed.set_author(
-                name=author_name, url=author_url, icon_url=author_icon
-            )
-
         if footer:
-            footer_text, footer_icon = unpacked_props(footer, ("text", "icon_url"))
-            new_embed = new_embed.set_footer(text=footer_text, icon_url=footer_icon)
+            footer_text = footer.get("text")
+
+            if isinstance(footer_text, str) and len(footer_text) > 2048:
+                footer_text = footer_text[:2048]
+
+            new_embed.set_footer(
+                text=footer_text,
+                icon_url=footer.get("icon_url", footer.get("url")),
+            )
 
         if image:
-            new_embed = new_embed.set_image(url=image)
+            new_embed.set_image(url=image)
 
         if thumbnail:
-            new_embed = new_embed.set_thumbnail(url=thumbnail)
+            new_embed.set_thumbnail(url=thumbnail)
+
+        if author:
+            author_name = author.get("name")
+
+            if isinstance(author_name, str) and len(author_name) > 256:
+                author_name = author_name[:256]
+
+            new_embed.set_author(
+                name=author.get("name"),
+                url=author.get("url"),
+                icon_url=author.get("icon_url"),
+            )
 
         if fields:
-            for field in fields:
-                field_index, field_name, field_value, field_inline = unpacked_props(
-                    field, ("index", "name", "value", "inline")
-                )
+            for i, field in enumerate(fields):
+                if i == 25:
+                    break
+
+                field_index = field.get("index")
+
+                if not isinstance(field_index, int):
+                    field_index = None
+
+                field_name = field.get("name")
+
+                if isinstance(field_name, str) and len(field_name) > 256:
+                    field_name = field_name[:256]
+
+                field_value = field.get("value")
+
+                if isinstance(field_value, str) and len(field_value) > 1024:
+                    field_value = field_value[:1024]
 
                 if field_index:
-                    new_embed = new_embed.insert_field_at(
+                    new_embed.insert_field_at(
                         index=field_index,
                         name=field_name,
                         value=field_value,
-                        inline=field_inline,
+                        inline=bool(field.get("inline")),
                     )
                     continue
 
-                new_embed = new_embed.add_field(
-                    name=field_name, value=field_value, inline=field_inline
+                new_embed.add_field(
+                    name=field_name,
+                    value=field_value,
+                    inline=bool(field.get("inline")),
                 )
 
         return new_embed
 
 
-class a(an):
-    pass
+a = an
+
+# Updated
 
 
-class with_HTTP(HTTP):
-    def __init__(self) -> None:
-        super().__init__()
-
+class with_HTTP:
     async def __bytes_from_url(
         self,
         url: str | None = None,

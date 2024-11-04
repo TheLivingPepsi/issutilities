@@ -1,8 +1,3 @@
-__version__ = "0.1.14"
+__version__ = "0.2.0"
 
-from . import (
-    actions as actions,
-    colors as colors,
-    craft as craft,
-    directories as directories,
-)
+from . import actions, colors, craft, directories
